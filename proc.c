@@ -90,6 +90,7 @@ found:
   p->pid = nextpid++;
   p->traced = 0;
   p->numOfSysCalls = 0;
+  p->contextSwitches = 0;
 
   release(&ptable.lock);
 
@@ -344,7 +345,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-
+      
+      p->contextSwitches++;
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -544,4 +546,12 @@ trace(int traced)
   p->numOfSysCalls++;
 
   return 22;
+}
+
+int
+cs(void)
+{
+  struct proc *p = myproc();
+
+  return p->contextSwitches;
 }

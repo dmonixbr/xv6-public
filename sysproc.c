@@ -98,3 +98,9 @@ sys_trace(void)
   argint(0, &traced);
   return trace(traced);
 }
+
+int
+sys_cs(void)
+{
+  return cs();
+}

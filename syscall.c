@@ -104,6 +104,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_trace(void);
+extern int sys_cs(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -128,6 +129,7 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_trace]   sys_trace,
+[SYS_cs]      sys_cs,
 };
 
 static char* (syscallsNames[]) = {
@@ -153,6 +155,7 @@ static char* (syscallsNames[]) = {
 [SYS_mkdir]   "sys_mkdir",
 [SYS_close]   "sys_close",
 [SYS_trace]   "sys_trace",
+[SYS_cs]      "sys_cs",
 };
 
 void
