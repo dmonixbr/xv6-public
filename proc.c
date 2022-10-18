@@ -545,7 +545,7 @@ trace(int traced)
   p->traced = traced;
   p->numOfSysCalls++;
 
-  return 22;
+  return p->numOfSysCalls;
 }
 
 int
