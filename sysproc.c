@@ -89,3 +89,12 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_trace(void)
+{
+  int traced;
+  
+  argint(0, &traced);
+  return trace(traced);
+}

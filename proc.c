@@ -88,6 +88,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->traced = 0;
+  p->numOfSysCalls = 0;
 
   release(&ptable.lock);
 
@@ -531,4 +533,15 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int
+trace(int traced)
+{
+  struct proc *p = myproc();
+
+  p->traced = traced;
+  p->numOfSysCalls++;
+
+  return 22;
 }
