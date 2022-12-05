@@ -104,3 +104,36 @@ sys_cs(void)
 {
   return cs();
 }
+
+int
+sys_settickets(void)
+{
+  struct proc *p = myproc();
+  int n;
+  if(argint(0, &n) < 0)
+    return -1;
+  p->tickets = n;
+  return n;
+}
+
+int sys_wait2(void){
+  int *retime;
+  int *rutime;
+  int *stime;
+
+  if(argptr(0, (char**)&retime, sizeof(int)) < 0)
+    return -1;
+  if(argptr(1, (char**)&rutime, sizeof(int)) < 0)
+    return -1;
+  if(argptr(2, (char**)&stime, sizeof(int)) < 0)
+    return -1;
+
+  return wait2(retime, rutime, stime);
+}
+
+int
+sys_user_yield(void)
+{
+  yield();
+  return 0;
+}

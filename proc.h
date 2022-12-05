@@ -52,6 +52,11 @@ struct proc {
   int traced;                  // if 0 is not traced, otherwise is traced
   int numOfSysCalls;           // Number of system calls that the process called.
   int contextSwitches;          // Number of times the process switched its context.
+  int tickets;                  // Number of tickets for the scheduler
+  uint ctime;
+  int stime;
+  int rutime;
+  int retime;
 };
 
 // Process memory is laid out contiguously, low addresses first:

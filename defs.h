@@ -122,6 +122,8 @@ void            wakeup(void*);
 void            yield(void);
 int             trace(int);
 int             cs(void);
+int             wait2(int*, int*, int*);
+int             user_yield(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

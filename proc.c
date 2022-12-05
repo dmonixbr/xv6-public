@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "rand.h"
 
 struct {
   struct spinlock lock;
@@ -91,6 +92,7 @@ found:
   p->traced = 0;
   p->numOfSysCalls = 0;
   p->contextSwitches = 0;
+  p->tickets = 10;
 
   release(&ptable.lock);
 
@@ -335,9 +337,25 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    int tickets_totais = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+      tickets_totais = tickets_totais + p->tickets;
+    }
+
+    int ticket_vencedor = random_at_most(tickets_totais);
+
+    int contador_ticket = 0;
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+      contador_ticket = contador_ticket + p->tickets;
+
+      if(contador_ticket < ticket_vencedor){
+        continue;
+      }
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -554,4 +572,57 @@ cs(void)
   struct proc *p = myproc();
 
   return p->contextSwitches;
+}
+
+int
+set_tickets(int tickets){
+  cprintf("%d", tickets);
+  return 0;
+}
+
+int wait2(int *retime, int *rutime, int *stime){
+  struct proc *processo;
+  int temFilhos, pid;
+  struct proc *processoAtual = myproc();
+  acquire(&ptable.lock);
+  for(;;){
+    temFilhos = 0;
+    for(processo = ptable.proc; processo < &ptable.proc[NPROC]; processo++){
+      if(processo->parent != processoAtual)
+        continue;
+      temFilhos = 1;
+      if(processo->state == ZOMBIE){
+        *retime = processo->retime;
+        *rutime = processo->rutime;
+        *stime = processo->stime;
+        pid = processo->pid;
+        kfree(processo->kstack);
+        processo->kstack = 0;
+        freevm(processo->pgdir);
+        processo->pid = 0;
+        processo->parent = 0;
+        processo->name[0] = 0;
+        processo->killed = 0;
+        processo->state = UNUSED;
+        processo->ctime = 0;
+        processo->retime = 0;
+        processo->rutime = 0;
+        processo->stime = 0;
+        release(&ptable.lock);
+        return pid;
+      }
+    }
+    if(!temFilhos || processoAtual->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+    sleep(processoAtual, &ptable.lock);
+  }
+}
+
+int 
+user_yield(void)
+{
+  yield();
+  return 0;
 }
