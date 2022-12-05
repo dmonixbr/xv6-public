@@ -434,119 +434,60 @@ int wait(void)
 //   - swtch to start running that process
 //   - eventually that process transfers control
 //       via swtch back to the scheduler.
-void scheduler(void)
+void
+scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  int foundproc = 1;
-  int count = 0;
-  long golden_ticket = 0;
-  int total_no_tickets = 0;
-
-  for (;;)
-  {
-    if (c->proc->tipoScheduler == 1)
-    {
-      // Enable interrupts on this processor.
-      sti();
-
-      // Loop over process table looking for process to run.
-      acquire(&ptable.lock);
-      p = 0;
-      if (!filaVazia(&fila2))
-        p = getPrimeiroFila(&fila2);
-      if (p == 0)
-      {
-        if (!filaVazia(&fila0))
-          p = getPrimeiroFila(&fila1);
-
-        if (p == 0)
-          if (!filaVazia(&fila0))
-            p = getPrimeiroFila(&fila0);
-      }
-      if (p)
-      {
-        // colocando o processo no fim da sua fila.
-        if (p->prioridade == 0)
-        {
-          removeFila(&fila0, p);
-          adicionaFila(&fila0, p);
-        }
-        else if (p->prioridade == 1)
-        {
-          removeFila(&fila1, p);
-          adicionaFila(&fila1, p);
-        }
-        else
-        {
-          removeFila(&fila2, p);
-          adicionaFila(&fila2, p);
-        }
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
-
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&ptable.lock);
-    } else if (c->proc->tipoScheduler == 0){
-      // Enable interrupts on this processor.
+  
+  for(;;){
+    // Enable interrupts on this processor.
     sti();
 
-    if (!foundproc) hlt();
-    foundproc = 0;
-
+    if (ticks % INTERV != 0) continue;
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
 
-    //resetting the variables to make scheduler start from the beginning of the process queue
-    golden_ticket = 0;
-    count = 0;
-    total_no_tickets = 0;
-    
-    //calculate Total number of tickets for runnable processes  
-    
-    total_no_tickets = lottery_Total();
 
-    //pick a random ticket from total available tickets
-    golden_ticket = random_at_most(total_no_tickets);
- 
+    // Soma de tickets de todos os processos em estado executável
+    int totalTickets = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      if (p->state != RUNNABLE)
+        continue;
+      totalTickets += p->tickets;
+    }
+
+    int luckyTicket = random_at_most(totalTickets);
+
+    // Quantidade de tickets contados até o presente processo da tabela
+    int count = 0;
+
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
 
-      //find the process which holds the lottery winning ticket 
-      if ((count + p->tickets) < golden_ticket){
-        count += p->tickets;
+      // Se o processo não é detentor do "lucky ticket", pula a iteração
+      if((count += p->tickets) < luckyTicket)
         continue;
-      }
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      foundproc = 1;
       c->proc = p;
       switchuvm(p);
+      logSwitch(p);
       p->state = RUNNING;
-      swtch(c->scheduler, c->proc->context);
+
+      swtch(&(c->scheduler), p->context);
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
-      break;
     }
     release(&ptable.lock);
-    }
+
   }
 }
 
